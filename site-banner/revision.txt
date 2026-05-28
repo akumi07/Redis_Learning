@@ -1,0 +1,192 @@
+
+REDIS + EXPRESS LECTURE REVISION NOTES
+======================================
+
+MAIN MOTIVE OF THIS LECTURE
+---------------------------
+
+This lecture teaches how to use Redis with Node.js and Express
+to store and retrieve fast temporary data.
+
+You learned:
+- How backend APIs work
+- How Node.js communicates with Redis
+- CRUD operations using Redis
+- Why Redis is used in real-world applications
+- How Express acts as a middle layer between client and database
+
+
+BIG PICTURE OF WHAT YOU BUILT
+-----------------------------
+
+You created a backend system for a website banner.
+
+Example:
+"🔥 Big Billion Day Sale Live!"
+
+Instead of hardcoding this banner in frontend,
+backend stores it dynamically in Redis.
+
+Admin can:
+- Create banner
+- Update banner
+- Fetch banner
+- Delete banner
+- Check if banner exists
+
+without restarting the application.
+
+
+WHY REDIS?
+-----------
+
+Traditional databases:
+- MongoDB
+- MySQL
+- PostgreSQL
+
+store data on disk.
+
+Redis stores data in RAM (memory),
+which makes it extremely fast.
+
+Redis is mainly used for:
+- caching
+- sessions
+- OTP storage
+- rate limiting
+- leaderboards
+- realtime applications
+- temporary data
+
+
+WHAT YOU LEARNED
+----------------
+
+1. Creating APIs using Express
+
+app.get()
+app.post()
+app.delete()
+
+These create backend routes/endpoints.
+
+
+2. Reading Request Body
+
+req.body.message
+
+This reads JSON data sent by user.
+
+Example:
+{
+   "message": "Big Sale!"
+}
+
+
+3. Storing Data in Redis
+
+redis.set(key, value)
+
+Example:
+app:banner => "Big Sale!"
+
+
+4. Fetching Data
+
+redis.get(key)
+
+
+5. Deleting Data
+
+redis.del(key)
+
+
+6. Checking Whether Data Exists
+
+redis.exists(key)
+
+
+CRUD OPERATIONS
+---------------
+
+Create  -> set()
+Read    -> get()
+Update  -> set() again
+Delete  -> del()
+
+These are fundamental backend concepts.
+
+
+PROJECT ARCHITECTURE
+--------------------
+
+Client/Postman
+       ↓
+Express Server
+       ↓
+Redis Server
+       ↓
+Stores Data in RAM
+
+
+WHAT EXPRESS IS DOING
+---------------------
+
+Express acts as middleman.
+
+Flow:
+
+Client ↔ Express ↔ Redis
+
+- Client sends request
+- Express receives request
+- Express talks to Redis
+- Redis sends response
+- Express returns response to client
+
+
+WHY ASYNC/AWAIT?
+----------------
+
+Redis operations take time.
+
+So we use:
+
+await redis.get()
+
+Meaning:
+"Wait until Redis replies."
+
+
+WHY THIS LECTURE IS IMPORTANT
+-----------------------------
+
+This lecture is foundation for:
+- Caching
+- Docker projects
+- Scalable backend systems
+- Microservices
+- System design
+- High-performance applications
+
+
+REAL INDUSTRY USE CASES OF REDIS
+--------------------------------
+
+1. OTP Storage
+2. Sessions
+3. Caching APIs
+4. Leaderboards
+5. Live Chat
+6. Realtime Notifications
+7. Rate Limiting
+
+
+FINAL SUMMARY
+-------------
+
+This lecture teaches:
+
+"How to build backend APIs that store and retrieve
+fast temporary data using Redis."

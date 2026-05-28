@@ -1,0 +1,572 @@
+
+=========================================================
+COMPLETE DOCKER + DOCKER COMPOSE NOTES
+FOR BACKEND ENGINEERING
+=========================================================
+
+=========================================================
+1. WHAT IS DOCKER?
+=========================================================
+
+Docker ek platform hai jo applications ko isolated
+environment me run karta hai.
+
+Is isolated environment ko bolte hain:
+
+CONTAINER
+
+Container ek lightweight mini-computer ki tarah hota hai.
+
+Uske andar:
+- application
+- libraries
+- dependencies
+- runtime
+- configs
+
+sab hota hai.
+
+=========================================================
+2. WHY DOCKER WAS CREATED?
+=========================================================
+
+Before Docker:
+
+Developer ke machine me:
+- different software versions
+- dependency conflicts
+- setup issues
+
+Example:
+
+Developer A:
+Node v18
+
+Developer B:
+Node v20
+
+Application break ho sakti hai.
+
+Docker solve karta hai:
+
+"Works same everywhere"
+
+=========================================================
+3. WHAT IS A CONTAINER?
+=========================================================
+
+Container:
+- lightweight
+- isolated
+- portable
+
+environment hota hai.
+
+Container me:
+- OS layer
+- software
+- dependencies
+
+hote hain.
+
+=========================================================
+4. CONTAINER VS VIRTUAL MACHINE
+=========================================================
+
+Virtual Machine:
+- full operating system
+- heavy
+- slow
+
+Container:
+- lightweight
+- fast
+- shared kernel
+
+Isi liye Docker popular hai.
+
+=========================================================
+5. WHAT IS DOCKER IMAGE?
+=========================================================
+
+Image = blueprint/template
+
+Container = running instance of image
+
+Example:
+
+Image:
+redis:7
+
+Container:
+running Redis server
+
+=========================================================
+6. WHAT IS DOCKER HUB?
+=========================================================
+
+Docker Hub ek online registry hai.
+
+Yaha se images download hoti hain.
+
+Example:
+
+redis
+mongo
+node
+nginx
+
+=========================================================
+7. WHAT IS DOCKER COMPOSE?
+=========================================================
+
+Docker Compose multiple containers ko ek saath manage karta hai.
+
+Example:
+
+Project needs:
+- Node backend
+- Redis
+- MongoDB
+
+Compose sabko ek command me run karega.
+
+=========================================================
+8. WHY DOCKER COMPOSE?
+=========================================================
+
+Without compose:
+
+Har service manually start karo.
+
+With compose:
+
+docker compose up
+
+Bas.
+
+=========================================================
+9. WHAT IS docker-compose.yml?
+=========================================================
+
+Ye infrastructure configuration file hoti hai.
+
+Yaha define hota hai:
+
+- services
+- ports
+- volumes
+- environment variables
+- networks
+
+Matlab:
+
+Infrastructure as Code
+
+=========================================================
+10. YOUR FILE EXPLANATION
+=========================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
+  mongo:
+    image: mongo:7
+    container_name: chai-aur-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: chai_aur_redis
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  redis-data:
+  mongo-data:
+
+=========================================================
+11. WHAT IS services?
+=========================================================
+
+services:
+ke andar hum define karte hain:
+
+Kaunse containers run honge.
+
+Tumhare case me:
+- Redis
+- MongoDB
+
+=========================================================
+12. REDIS SERVICE
+=========================================================
+
+redis:
+
+Redis container define kar raha hai.
+
+=========================================================
+13. IMAGE
+=========================================================
+
+image: redis:7-alpine
+
+Meaning:
+
+Docker Hub se:
+Redis version 7 download karo.
+
+Alpine:
+lightweight Linux.
+
+Small size.
+Fast startup.
+
+=========================================================
+14. CONTAINER NAME
+=========================================================
+
+container_name: redis
+
+Container ka custom naam.
+
+Otherwise Docker random naam deta.
+
+=========================================================
+15. PORT MAPPING
+=========================================================
+
+ports:
+  - "6379:6379"
+
+Format:
+
+HOST_PORT:CONTAINER_PORT
+
+Meaning:
+
+Machine ka 6379
+-> container ke 6379 se connect hoga.
+
+=========================================================
+16. WHY PORTS NEEDED?
+=========================================================
+
+Container isolated hota hai.
+
+Without port mapping:
+outside world access nahi kar paayega.
+
+=========================================================
+17. WHAT IS COMMAND?
+=========================================================
+
+command:
+["redis-server", "--appendonly", "yes"]
+
+Custom startup command.
+
+=========================================================
+18. WHAT IS APPENDONLY?
+=========================================================
+
+Redis normally RAM use karta hai.
+
+RAM volatile hoti hai.
+
+Server restart:
+data gone.
+
+appendonly yes:
+Redis disk pe bhi save karega.
+
+This is called:
+
+AOF
+(Append Only File)
+
+=========================================================
+19. WHAT IS VOLUME?
+=========================================================
+
+Volume persistent storage hota hai.
+
+=========================================================
+20. WHY VOLUME IMPORTANT?
+=========================================================
+
+Without volume:
+
+Container delete
+-> data delete
+
+With volume:
+
+Container delete
+-> data safe
+
+=========================================================
+21. REDIS VOLUME
+=========================================================
+
+volumes:
+  - redis-data:/data
+
+/data
+Redis ka internal storage path hai.
+
+=========================================================
+22. MONGO SERVICE
+=========================================================
+
+mongo:
+
+MongoDB container define kar raha hai.
+
+=========================================================
+23. MONGO IMAGE
+=========================================================
+
+image: mongo:7
+
+MongoDB version 7.
+
+=========================================================
+24. MONGO PORT
+=========================================================
+
+27017 MongoDB ka default port hai.
+
+=========================================================
+25. ENVIRONMENT VARIABLES
+=========================================================
+
+environment:
+  MONGO_INITDB_DATABASE: chai_aur_redis
+
+Container start hote time:
+database create karega.
+
+=========================================================
+26. MONGO VOLUME
+=========================================================
+
+mongo-data:/data/db
+
+MongoDB ka actual data yaha store hota hai.
+
+=========================================================
+27. GLOBAL VOLUMES
+=========================================================
+
+volumes:
+  redis-data:
+  mongo-data:
+
+Persistent storage create karte hain.
+
+=========================================================
+28. WHAT HAPPENS WHEN YOU RUN?
+=========================================================
+
+docker compose up
+
+Docker:
+1. images download karega
+2. containers create karega
+3. network banayega
+4. ports expose karega
+5. storage attach karega
+
+=========================================================
+29. HOW NODE APP CONNECTS?
+=========================================================
+
+Redis:
+
+redis://localhost:6379
+
+Mongo:
+
+mongodb://localhost:27017
+
+=========================================================
+30. REAL WORLD FLOW
+=========================================================
+
+Frontend
+   |
+Backend API
+   |
+----------------------
+|                    |
+Redis              MongoDB
+
+=========================================================
+31. WHY REDIS + MONGO TOGETHER?
+=========================================================
+
+Redis:
+temporary fast data
+
+MongoDB:
+permanent structured data
+
+=========================================================
+32. REDIS USE CASES
+=========================================================
+
+- OTP
+- Cache
+- Sessions
+- Leaderboards
+- Realtime systems
+- Rate limiting
+
+=========================================================
+33. MONGODB USE CASES
+=========================================================
+
+- Users
+- Products
+- Orders
+- Posts
+- Permanent data
+
+=========================================================
+34. WHY COMPANIES LOVE DOCKER?
+=========================================================
+
+Because:
+- portable
+- reproducible
+- scalable
+- isolated
+- easy deployment
+
+=========================================================
+35. BIG COMPANY ARCHITECTURE
+=========================================================
+
+Real systems:
+
+Frontend Container
+Backend Container
+Redis Container
+Mongo Container
+Nginx Container
+Kafka Container
+
+=========================================================
+36. WHAT IS NETWORKING IN DOCKER?
+=========================================================
+
+Containers internally ek dusre se communicate kar sakte hain.
+
+Example:
+
+backend container
+-> redis container
+
+=========================================================
+37. DEVOPS MINDSET
+=========================================================
+
+Professional engineers:
+machine manually setup nahi karte.
+
+They define infrastructure using code.
+
+That is:
+Docker + Kubernetes
+
+=========================================================
+38. WHAT YOU ARE REALLY LEARNING
+=========================================================
+
+This lecture sirf Redis nahi hai.
+
+You are learning:
+
+- backend architecture
+- containerization
+- infrastructure
+- scalable systems
+- persistence
+- service management
+
+=========================================================
+39. IMPORTANT DOCKER COMMANDS
+=========================================================
+
+Start containers:
+
+docker compose up
+
+Detached mode:
+
+docker compose up -d
+
+Stop containers:
+
+docker compose down
+
+See containers:
+
+docker ps
+
+See logs:
+
+docker logs redis
+
+Enter container:
+
+docker exec -it redis sh
+
+=========================================================
+40. MOST IMPORTANT UNDERSTANDING
+=========================================================
+
+Modern backend engineering:
+application code + infrastructure
+
+Both important.
+
+Docker industry standard tool hai.
+
+=========================================================
+41. NEXT THINGS TO LEARN
+=========================================================
+
+After this:
+
+- Dockerfile
+- Custom images
+- Kubernetes
+- Nginx
+- CI/CD
+- AWS ECS
+- Docker networking
+- Multi-stage builds
+- Microservices
+
+=========================================================
+42. FINAL PROFESSIONAL UNDERSTANDING
+=========================================================
+
+You are slowly moving from:
+
+"coding"
+
+to
+
+"system engineering"
+
+This is the real backend journey.
