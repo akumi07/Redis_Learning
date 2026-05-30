@@ -1,0 +1,156 @@
+
+REDIS COMPLETE REVISION NOTES
+
+1. WHAT IS REDIS?
+- In-memory database
+- Key-value store
+- Extremely fast
+- Used for caching, sessions, queues
+
+2. WHERE REDIS STORES DATA?
+Redis stores data in RAM (Main Memory).
+
+Architecture:
+Frontend/Postman
+    |
+Node.js Express Server
+    |
+Redis Commands
+    |
+Redis Server
+    |
+RAM Memory
+
+3. START REDIS USING DOCKER
+
+docker compose up
+
+Check containers:
+docker ps
+
+4. OPEN REDIS CLI
+
+docker exec -it redis redis-cli
+
+5. IMPORTANT COMMANDS
+
+KEYS *
+Shows all keys.
+
+SET user:name "Akash"
+GET user:name
+
+HSET user:1 name "Akash" age 23
+HGET user:1 age
+HGETALL user:1
+
+HDEL user:1 age
+HEXISTS user:1 age
+
+6. JSON STORAGE
+
+SET user:1:json "{\"name\":\"Akash\",\"age\":23}"
+
+Redis stores:
+ONE BIG STRING
+
+Problems:
+- Full object rewritten on update
+- Cannot fetch single field directly
+
+7. HASH STORAGE
+
+HSET user:1:hash name "Akash" age 23
+
+Redis stores:
+name -> Akash
+age -> 23
+
+Advantages:
+- Partial updates
+- Single field access
+- Better memory optimization
+
+8. JSON vs HASH
+
+JSON:
+Entire object stored as string.
+
+HASH:
+Field-by-field storage.
+
+9. UPDATE DIFFERENCE
+
+JSON Update:
+1. GET full object
+2. Parse
+3. Modify
+4. Stringify
+5. SET again
+
+HASH Update:
+HSET user:1:hash age 24
+
+Only one field changes.
+
+10. MEMORY COMMANDS
+
+INFO memory
+
+MEMORY USAGE user:1:json
+MEMORY USAGE user:1:hash
+
+11. PERSISTENCE
+
+Redis is in-memory.
+Data survives restart only if persistence enabled.
+
+Types:
+- RDB Snapshot
+- AOF Logs
+
+Check persistence:
+CONFIG GET save
+
+12. PRACTICAL TEST
+
+SET test "hello"
+
+Restart container:
+docker restart redis
+
+Again check:
+GET test
+
+13. INDUSTRY USAGE
+
+Swiggy/Zomato:
+HASH used for:
+- cartCount
+- premiumMember
+- currentLocation
+
+API cache:
+JSON/String used.
+
+14. IMPORTANT KEY DESIGN
+
+user:1:profile
+user:1:cart
+user:1:session
+product:101
+
+15. IMPORTANT INTERVIEW QUESTIONS
+
+Q. Why Redis fast?
+A. Because data stored in RAM.
+
+Q. Why HASH better for profiles?
+A. Field-level updates.
+
+Q. Difference between JSON and HASH?
+A.
+JSON -> one big string
+HASH -> field-by-field storage
+
+END OF NOTES

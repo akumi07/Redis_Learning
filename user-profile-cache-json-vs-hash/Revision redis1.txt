@@ -1,0 +1,730 @@
+
+REDIS JSON vs HASH — COMPLETE REVISION NOTES
+============================================
+
+PROJECT OVERVIEW
+================
+
+This project compares two ways of storing user profile data in Redis:
+
+1. JSON STRING STORAGE
+2. HASH STORAGE
+
+Tech Stack:
+------------
+- Node.js
+- Express.js
+- Redis
+- ioredis
+- Docker
+
+------------------------------------------------------------
+FOLDER STRUCTURE
+------------------------------------------------------------
+
+05-user-profile-cache-json-vs-hash/
+│
+├── package.json
+├── docker-compose.yml
+│
+└── src/
+    └── index.js
+
+============================================================
+1. package.json
+============================================================
+
+{
+  "name": "05-user-profile-cache-json-vs-hash",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+
+  "scripts": {
+    "dev": "node src/index.js"
+  },
+
+  "dependencies": {
+    "express": "^4.18.3",
+    "ioredis": "^5.4.1"
+  }
+}
+
+EXPLANATION
+===========
+
+"type": "module"
+----------------
+Allows ES Module syntax.
+
+Without:
+---------
+const express = require("express")
+
+With:
+-----
+import express from "express"
+
+scripts.dev
+-----------
+Runs server:
+node src/index.js
+
+============================================================
+2. REDIS CONNECTION
+============================================================
+
+Code:
+-----
+
+import Redis from "ioredis";
+
+const redis = new Redis(
+  process.env.REDIS_URL || "redis://localhost:6379"
+);
+
+EXPLANATION
+===========
+
+process.env.REDIS_URL
+---------------------
+Used in production.
+
+Fallback:
+---------
+redis://localhost:6379
+
+Meaning:
+--------
+Connect to local Redis server.
+
+============================================================
+3. EXPRESS JSON MIDDLEWARE
+============================================================
+
+app.use(express.json());
+
+EXPLANATION
+===========
+
+Converts incoming JSON body into JavaScript object.
+
+Example Incoming Request:
+-------------------------
+
+{
+  "name": "Akash",
+  "age": 23
+}
+
+Becomes:
+--------
+
+req.body = {
+  name: "Akash",
+  age: 23
+}
+
+============================================================
+4. JSON STORAGE METHOD
+============================================================
+
+SAVE API
+========
+
+app.post("/user/:id/json", async (req, res) => {
+
+  await redis.set(
+    `user:${req.params.id}:json`,
+    JSON.stringify(req.body)
+  );
+
+  res.json({
+    savedAs: "json"
+  });
+
+});
+
+------------------------------------------------------------
+ARCHITECTURE OF JSON METHOD
+------------------------------------------------------------
+
+Client
+  |
+  | sends object
+  v
+
+Node.js Server
+  |
+  | JSON.stringify()
+  v
+
+Redis
+  |
+  | Stores COMPLETE OBJECT as SINGLE STRING
+  v
+
+Key:
+user:1:json
+
+Value:
+'{"name":"Akash","age":23,"city":"Delhi"}'
+
+IMPORTANT
+=========
+
+Redis SET stores ONLY STRING values.
+
+So object must be converted into string.
+
+JSON.stringify()
+----------------
+Converts object -> string
+
+============================================================
+GET JSON DATA
+============================================================
+
+app.get("/user/:id/json", async (req, res) => {
+
+  const raw = await redis.get(
+    `user:${req.params.id}:json`
+  );
+
+  res.json({
+    user: raw ? JSON.parse(raw) : null
+  });
+
+});
+
+EXPLANATION
+===========
+
+redis.get()
+-----------
+Returns STRING.
+
+JSON.parse()
+------------
+Converts string back to object.
+
+============================================================
+5. HASH STORAGE METHOD
+============================================================
+
+SAVE HASH
+=========
+
+app.post("/user/:id/hash", async (req, res) => {
+
+  await redis.hset(
+    `user:${req.params.id}:hash`,
+    req.body
+  );
+
+  res.json({
+    savedAs: "hash"
+  });
+
+});
+
+------------------------------------------------------------
+ARCHITECTURE OF HASH METHOD
+------------------------------------------------------------
+
+Client
+  |
+  | sends object
+  v
+
+Node.js Server
+  |
+  | passes object directly
+  v
+
+Redis HASH
+  |
+  | Stores EACH FIELD separately
+  v
+
+Key:
+user:1:hash
+
+Fields:
+name -> Akash
+age  -> 23
+city -> Delhi
+
+IMPORTANT
+=========
+
+HASH stores field-by-field.
+
+This is NOT one big string.
+
+============================================================
+GET HASH DATA
+============================================================
+
+app.get("/user/:id/hash", async (req, res) => {
+
+  const user = await redis.hgetall(
+    `user:${req.params.id}:hash`
+  );
+
+  res.json({
+    user
+  });
+
+});
+
+EXPLANATION
+===========
+
+hgetall()
+---------
+Returns all fields from hash.
+
+============================================================
+MAJOR ARCHITECTURAL DIFFERENCE
+============================================================
+
+------------------------------------------------------------
+JSON METHOD INTERNAL ARCHITECTURE
+------------------------------------------------------------
+
+Redis sees:
+
+user:1:json
+--------------------------------------
+'{"name":"Akash","age":23}'
+--------------------------------------
+
+Entire object stored as ONE STRING.
+
+Even if only age changes:
+-------------------------
+Entire object rewritten.
+
+============================================================
+
+------------------------------------------------------------
+HASH METHOD INTERNAL ARCHITECTURE
+------------------------------------------------------------
+
+Redis sees:
+
+user:1:hash
+
+name -> Akash
+age  -> 23
+city -> Delhi
+
+Every field stored separately.
+
+If age changes:
+---------------
+Only age field updated.
+
+This is more efficient.
+
+============================================================
+REAL PRACTICAL DIFFERENCE
+============================================================
+
+Suppose user object is:
+
+{
+  "name": "Akash",
+  "email": "akash@gmail.com",
+  "age": 23,
+  "city": "Delhi",
+  "premium": true
+}
+
+============================================================
+CASE 1: UPDATE ONLY AGE IN JSON METHOD
+============================================================
+
+Step 1:
+-------
+Fetch complete object
+
+Step 2:
+-------
+Modify age
+
+Step 3:
+-------
+Again stringify entire object
+
+Step 4:
+-------
+Rewrite complete string
+
+Even for tiny change.
+
+============================================================
+CASE 2: UPDATE ONLY AGE IN HASH METHOD
+============================================================
+
+Only run:
+
+HSET user:1:hash age 24
+
+Only one field changes.
+
+Very fast.
+
+============================================================
+WHY HASH IS FASTER FOR USER PROFILES
+============================================================
+
+Because applications frequently update:
+
+- lastSeen
+- loginCount
+- location
+- cartCount
+- premiumStatus
+
+HASH allows field-level updates.
+
+============================================================
+PRACTICAL EXPERIMENTS YOU SHOULD TRY
+============================================================
+
+============================================================
+EXPERIMENT 1 — STORE JSON
+============================================================
+
+API:
+
+POST /user/1/json
+
+Body:
+-----
+
+{
+  "name": "Akash",
+  "age": 23
+}
+
+Now open Redis CLI:
+
+GET user:1:json
+
+Output:
+-------
+
+'{"name":"Akash","age":23}'
+
+Observe:
+--------
+Entire object is one string.
+
+============================================================
+EXPERIMENT 2 — STORE HASH
+============================================================
+
+API:
+
+POST /user/1/hash
+
+Body:
+-----
+
+{
+  "name": "Akash",
+  "age": 23
+}
+
+Now check Redis CLI:
+
+HGETALL user:1:hash
+
+Output:
+-------
+
+1) "name"
+2) "Akash"
+3) "age"
+4) "23"
+
+Observe:
+--------
+Separate fields stored.
+
+============================================================
+EXPERIMENT 3 — UPDATE SINGLE FIELD
+============================================================
+
+JSON METHOD
+===========
+
+You must:
+---------
+1. GET full object
+2. Modify object
+3. SET again
+
+HASH METHOD
+===========
+
+Only:
+
+HSET user:1:hash age 24
+
+Very efficient.
+
+============================================================
+EXPERIMENT 4 — FETCH ONLY ONE FIELD
+============================================================
+
+JSON METHOD
+===========
+
+Not possible directly.
+
+Need:
+-----
+1. GET full string
+2. Parse full object
+3. Extract age
+
+HASH METHOD
+===========
+
+Direct:
+
+HGET user:1:hash age
+
+Very fast.
+
+============================================================
+IMPORTANT REDIS COMMANDS
+============================================================
+
+------------------------------------------------------------
+SET
+------------------------------------------------------------
+
+Stores single string value.
+
+SET user:name "Akash"
+
+GET user:name
+
+============================================================
+HSET
+============================================================
+
+Stores object field.
+
+HSET user:1 name "Akash"
+
+============================================================
+HGET
+============================================================
+
+Get single field.
+
+HGET user:1 name
+
+============================================================
+HGETALL
+============================================================
+
+Get complete object.
+
+HGETALL user:1
+
+============================================================
+HDEL
+============================================================
+
+Delete field.
+
+HDEL user:1 age
+
+============================================================
+HEXISTS
+============================================================
+
+Check if field exists.
+
+HEXISTS user:1 name
+
+Returns:
+--------
+1 -> exists
+0 -> not exists
+
+============================================================
+INDUSTRY USAGE
+============================================================
+
+SWIGGY / ZOMATO / BLINKIT
+=========================
+
+HASH used for:
+
+user:1
+-------
+cartCount
+currentLocation
+lastRestaurant
+premiumMember
+
+Reason:
+-------
+Single fields update frequently.
+
+============================================================
+WHEN TO USE JSON
+============================================================
+
+Use when:
+---------
+- Whole object needed together
+- No partial updates
+- Simpler implementation
+
+Examples:
+---------
+- Full API response cache
+- Static configuration
+
+============================================================
+WHEN TO USE HASH
+============================================================
+
+Use when:
+---------
+- Need partial updates
+- Need single field access
+- Frequent modifications
+
+Examples:
+---------
+- User profiles
+- Sessions
+- Live counters
+- Shopping carts
+
+============================================================
+MOST IMPORTANT INTERVIEW QUESTION
+============================================================
+
+Q) Why HASH better than JSON in Redis?
+
+Answer:
+-------
+
+HASH supports:
+1. Field-level updates
+2. Single field fetch
+3. Better memory optimization
+4. Faster partial updates
+
+JSON string requires rewriting entire object.
+
+============================================================
+BEST REDIS KEY NAMING PRACTICE
+============================================================
+
+user:1:profile
+user:1:cart
+user:1:session
+product:101
+order:999
+
+This is called:
+----------------
+NAMESPACING
+
+Used heavily in industry.
+
+============================================================
+DOCKER COMMANDS
+============================================================
+
+Start Redis:
+------------
+
+docker compose up
+
+Stop:
+-----
+
+docker compose down
+
+============================================================
+RUN PROJECT
+============================================================
+
+1. Install packages
+-------------------
+
+npm install
+
+2. Start Redis
+---------------
+
+docker compose up
+
+3. Run server
+--------------
+
+npm run dev
+
+============================================================
+TEST APIs
+============================================================
+
+JSON API
+========
+
+POST:
+-----
+/user/1/json
+
+GET:
+----
+/user/1/json
+
+============================================================
+
+HASH API
+=========
+
+POST:
+-----
+/user/1/hash
+
+GET:
+----
+/user/1/hash
+
+============================================================
+FINAL REVISION SUMMARY
+============================================================
+
+JSON METHOD
+============
+- Entire object stored as string
+- Uses SET and GET
+- Needs stringify/parse
+- Bad for partial updates
+
+HASH METHOD
+============
+- Stores field-by-field
+- Uses HSET/HGET/HGETALL
+- Best for user profiles
+- Fast partial updates
+- Better architecture
+
+============================================================
+END OF NOTES
+============================================================
